@@ -13,7 +13,7 @@ public class SelectQuestions extends PostgresConnectionHandler {
      * @return A list of Strings that represent the categories.
      */
     public List<String> getAllDistinctCategoryNames() {
-        return null;
+        return this.dbAdapter.getAllDistinctCategoryNames();
     }
 
     /**
