@@ -44,7 +44,7 @@ public class SelectQuestions extends PostgresConnectionHandler {
      * @return A list actor objects that share a last name.
      */
     public List<Actor> getAllActorsWithLastName(String lastName) {
-        return this.dbAdapter.getActorsWithLastName(lastName);
+        return this.dbAdapter.getAllActorsWithLastName(lastName);
     }
 }
 

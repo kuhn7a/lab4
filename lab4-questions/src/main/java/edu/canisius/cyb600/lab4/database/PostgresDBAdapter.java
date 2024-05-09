@@ -66,7 +66,7 @@ public class PostgresDBAdapter extends AbstractDBAdapter {
         //Prepare the SQL statement with the code
         try (PreparedStatement statement = conn.prepareStatement(sql)) {
             //Substitute a string for last name for the ? in the sql
-            statement.setString(1, String.valueOf(firstLetter));
+            statement.setString(1, firstLetter + "%");
             ResultSet results = statement.executeQuery();
             //Initialize an empty List to hold the return set of films.
             List<Actor> actors = new ArrayList<>();
@@ -90,9 +90,8 @@ public class PostgresDBAdapter extends AbstractDBAdapter {
     @Override
     public List<Film> getAllFilmsWithALengthLongerThanX(int length) {
         //Create a string with the sql statement
-        String sql = "Select *\n" +
-                "from film_id, title, length\n" +
-                "where film.length > ?\n";
+        String sql = "Select * from film\n" +
+                "where length > ?\n";
         //Prepare the SQL statement with the code
         try (PreparedStatement statement = conn.prepareStatement(sql)) {
             //Substitute a string for last name for the ? in the sql
@@ -131,27 +130,46 @@ public class PostgresDBAdapter extends AbstractDBAdapter {
         try (Statement statement = conn.createStatement()) {
             //Initialize an empty List to hold the return set of category names.
             List<String> categoryNames = new ArrayList<>();
-            ResultSet results = statement.executeQuery("Select distinct name from category");
-            //Loop through all the results and create a new Film object to hold all its information
+            ResultSet results = statement.executeQuery("select distinct name from category");
+            //Loop through all the results and add the distinct name to the list
             while (results.next()) {
-                Category category = new Category();
-                category.setCategoryId(results.getInt("CATEGORY_ID"));
-                category.setName(results.getString("NAME"));
-                category.setLastUpdate(results.getDate("LAST_UPDATE"));
-                //Add category to the categoryNames
-                //categoryNames.add(category);
-
+                //Add the category name to the categoryNames list
+                categoryNames.add(results.getString("NAME"));
             }
-            //Return all the categories.
+            //Return all the distinct category names.
             return categoryNames;
-        } catch (SQLException exception) {
-            throw new RuntimeException(exception);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
-
     @Override
-    public  List<Actor> insertAllActorsWithAnOddNumberLastName(List<Actor> actors) {
-        return null;
+    public List<Actor> insertAllActorsWithAnOddNumberLastName(List<Actor> actors) {
+        String sql = "insert into actor (first_name, last_name) values (? , ? ) returning ACTOR_ID, LAST_UPDATE";
+        //Initialize an empty List to hold all inserted actors
+        List<Actor> insertedActors = new ArrayList<>();
+        try (PreparedStatement statement = conn.prepareStatement(sql)) {
+            for (Actor actor : actors) {
+                // Check if the last name length is odd
+                if (actor.getLastName().length() % 2 != 0) {
+                    statement.setString(1, actor.getFirstName());
+                    statement.setString(2, actor.getLastName());
+                    ResultSet resultSet = statement.executeQuery();
+
+                    if (resultSet.next()) {
+                        Actor insertedActor = new Actor(
+                                resultSet.getInt("ACTOR_ID"),
+                                actor.getFirstName(), // Currently being processed
+                                actor.getLastName(), // Currently being processed
+                                resultSet.getDate("LAST_UPDATE")
+                        );
+                        insertedActors.add(insertedActor);
+                    }
+                }
+            }
+        } catch(SQLException exception) {
+            exception.printStackTrace();
+        }
+        return insertedActors;
     }
 }
